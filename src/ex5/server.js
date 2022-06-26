@@ -1,21 +1,28 @@
+// Express boilerplate, hosting the `dist` file, connecting to the routes
+
 const express = require('express');
-const path = require('path');
+const cors = require('Cors');
 const bodyParser = require('body-parser');
-const api = require('./server/routes/api');
+const tasksRouter = require('./server/routes/api');
+//const logger = require('./server/middleware/logger');
+//const errorHandler = require('./server/middleware/error-handaling');
+const port = process.env.PORT || 8080;
+const app = express();
 
-const main = async () => {
+app.use([cors(), bodyParser.json()]);
+app.use('/static', express.static('public'));
 
-  const app = express();
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE');
+  next();
+});
 
-  app.use(express.static(path.join(__dirname, 'dist')));
+app.use('/tasks', tasksRouter);
 
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: false }));
+//app.use(errorHandler);
 
-  app.use('/', api);
-
-  const port = process.env.PORT || '3042';
-  app.listen(port, function () { console.log('Running on ' + port); });
-};
-
-main();
+app.listen(port, () => {
+  console.log(`server is connected on port ${port}`);
+});

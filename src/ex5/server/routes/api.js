@@ -1,19 +1,49 @@
 const express = require('express');
-const router = express.Router();
-const itemManager = require('../services/item_manager');
+const tasksService = require('../services/item_manager');
 
-router.get('/items', (_, res) => {
-    res.send(itemManager.getItems())
-})
+const tasksRouter = express.Router();
 
-router.post('/item', async (req, res) => {
-    await itemManager.handleItem(req.body.item)
-    res.end()
-})
+tasksRouter.get('/getAll', async (req, res, next) => {
+  const tasks = await tasksService.getAll();
 
-router.delete('/item', (req, res) => {
-    itemManager.deleteItem(req.body.item)
-    res.end()
-})
+  if (!tasks) {
+    const error = new Error("couldn't get tasks");
+    error.statusCode = 404;
+    next(error);
+  }
 
-module.exports = router
+  res.status(200).json(tasks);
+});
+
+tasksRouter.post('/addItem', async (req, res, next) => {
+  if (!Array.isArray(req.body)) {
+    const error = new Error('Input is not of type Array');
+    error.statusCode = 400;
+    next(error);
+  }
+
+  const createdItems = await tasksService.addTasksOrPokemons(req.body);
+  res.status(201).json(createdItems);
+});
+
+tasksRouter.delete('/deleteItem/:id', async (req, res, next) => {
+  await tasksService.deleteItem(req.params.id);
+  res.status(200).json(req.params.id);
+});
+
+tasksRouter.delete('/deleteAll', async (req, res, next) => {
+  await tasksService.deleteAll();
+  res.status(200).json(req.body);
+});
+
+tasksRouter.get('/changeState/:id', async (req, res, next) => {
+  await tasksService.changeState(req.params.id);
+  res.status(200).json(req.params.id);
+});
+
+tasksRouter.patch('/editItem/:id', async (req, res, next) => {
+  await tasksService.editItem(req.params.id, req.body);
+  res.status(200).json(req.body);
+});
+
+module.exports = tasksRouter;
