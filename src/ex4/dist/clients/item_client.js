@@ -21,7 +21,7 @@ export class ItemClient {
 
   async addTasks(tasks) {
     try {
-      const response = await fetch(`${this.URL}/addTask`, {
+      const response = await fetch(`${this.URL}/addItem`, {
         method: 'POST',
         body: JSON.stringify(tasks),
         headers: { 'Content-Type': 'application/json' },
@@ -31,16 +31,17 @@ export class ItemClient {
         console.log('Could not add tasks');
         return;
       }
+      return response;
     } catch (err) {
       console.log('some error occured:', err.message);
     }
   }
 
-  async removeItem(item) {
+  async removeItem(id) {
     try {
       const response = await fetch(`${this.URL}/deleteTask`, {
         method: 'DELETE',
-        body: JSON.stringify({ text: item }),
+        body: JSON.stringify({ id: id }),
         headers: { 'Content-Type': 'application/json' },
       });
 

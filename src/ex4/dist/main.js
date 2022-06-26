@@ -28,8 +28,8 @@ class Main {
     }
   };
 
-  deleteItem = async (item) => {
-    await this.itemClient.removeItem(item);
+  deleteItem = async (id) => {
+    await this.itemClient.removeItem(id);
   };
 
   onItemClick = (item) => {
@@ -51,10 +51,14 @@ class Main {
 
     items.forEach((item) => {
       const listItem = document.createElement('li');
+      listItem.id = item.Id;
+      const checkboxInput = document.createElement('input');
+      checkboxInput.type = 'checkbox';
       listItem.classList.add('list-item');
-      listItem.innerHTML = item.text;
+      listItem.innerHTML = item.ItemName;
 
-      const listItemDeleteButton = this._createDeleteButton(item.text);
+      const listItemDeleteButton = this._createDeleteButton(item.id);
+      listItem.appendChild(checkboxInput);
       listItem.appendChild(listItemDeleteButton);
       list.appendChild(listItem);
     });
@@ -63,11 +67,11 @@ class Main {
     list.style.display = 'flex';
   };
 
-  _createDeleteButton = (item) => {
+  _createDeleteButton = (id) => {
     const button = document.createElement('img');
     button.src = './images/delete_icon.svg';
     button.classList.add('list-item-delete-button');
-    button.addEventListener('click', () => this.deleteItem(item));
+    button.addEventListener('click', () => this.deleteItem(id));
 
     return button;
   };

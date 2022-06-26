@@ -1,53 +1,60 @@
-const PokemonClient = require('../clients/pokemon_client')
+const pokemonApi = require('../clients/pokemon_client');
+const { Op } = require('sequelize');
+const { Item } = require('../../db/models');
+const { v4: uuidv4 } = require('uuid');
+const pokemonClient = new pokemonApi();
 
 class ItemManager {
-    constructor() {
-        this.pokemonClient = new PokemonClient();
-        this.items = []; //TODO: remove, items should be stored to DB using Item sequelize model
-    }
+  constructor() {
+    this.pokemonClient = new pokemonApi();
+  }
 
-    getItems = () => this.items
+  getAll = async () => await Item.findAll({ order: [['createdAt', 'DESC']] });
 
-    handleItem = async item => {
-        if (this._isNumber(item)) { return await this.fetchAndAddPokemon(item); }
-        if (this._isList(item)) { return await this.fetchAndAddManyPokemon(item); }
+  deleteAll = async () =>
+    await Item.destroy({
+      truncate: true,
+    });
 
-        this.addItem(item)
-    }
+  deleteItem = async (id) =>
+    await Item.destroy({
+      where: {
+        Id: id,
+      },
+    });
 
-    addItem = item => {
-        this.items.push(item);
-    }
+  changeState = async (id) => {
+    const item = await Item.findOne({ where: { Id: id } });
+    const newStatus = !item.status;
+    await Item.update({ status: newStatus }, { where: { Id: id } });
+  };
 
-    addPokemonItem = pokemon => {
-        this.addItem(`Catch ${pokemon.name}`);
-    }
+  editItem = async (id, text) => {
+    await Item.update({ pokemonId: null, ...text }, { where: { Id: id } });
+  };
+  addTasksOrPokemons = async (tasks) => {
+    const pokemonsRegisterd = await Item.findAll({
+      where: { pokemonId: { [Op.ne]: null } },
+    });
+    const pokemonsIds = pokemonsRegisterd.map((item) => '' + item.pokemonId);
+    const tasksFiltered = tasks.filter((task) => !pokemonsIds.includes(task));
 
-    fetchAndAddPokemon = async pokemonId => {
-        try {
-            const pokemon = await this.pokemonClient.getPokemon(pokemonId);
-            this.addPokemonItem(pokemon);
-        } catch (error) {
-            this.addItem(`Pokemon with ID ${pokemonId} was not found`);
-        }
-    }
+    const result = await pokemonClient.fetchPokemons(tasksFiltered); // fetch only new pokemons
+    const array = result.map((item) => {
+      if (typeof item === 'object') {
+        return {
+          id: uuidv4(),
+          ItemName: `Catch ${item.name}`,
+          status: false,
+          pokemonId: item.id,
+        };
+      } else {
+        return { id: uuidv4(), ItemName: item, status: false, pokemonId: null };
+      }
+    });
 
-    fetchAndAddManyPokemon = async inputValue => {
-        try {
-            const pokemons = await this.pokemonClient.getManyPokemon(inputValue.replace("/ /g", "").split(","));
-            pokemons.forEach(this.addPokemonItem);
-        } catch (error) {
-            console.error(error)
-            this.addItem(`Failed to fetch pokemon with this input: ${inputValue}`)
-        }
-    }
-
-    deleteItem = item => {
-        this.items = this.items.filter(i => i !== item);
-    }
-
-    _isNumber = value => !isNaN(Number(value));
-    _isList = value => value.split(",").every(this._isNumber);
+    return await Item.bulkCreate(array);
+  };
 }
 
-module.exports = new ItemManager()
+module.exports = new ItemManager();

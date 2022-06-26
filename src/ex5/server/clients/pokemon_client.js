@@ -1,34 +1,36 @@
-const axios = require("axios")
+// The Pokemon Client (using axios) goes here
+const axios = require('axios');
 
-class PokemonClient {
-    constructor() {
-        this.API_URL = 'https://pokeapi.co/api/v2/pokemon/'
+module.exports = class PokemonClient {
+  constructor() {
+    this.API_URL = 'https://pokeapi.co/api/v2/pokemon/';
+  }
+
+  async fetchPokemons(ids) {
+    try {
+      const allResponses = await Promise.all(
+        ids.map((id) => this.fetchSinglePokemon(id))
+      );
+
+      return allResponses;
+    } catch (err) {
+      console.log(err);
+      throw new Error('Failed to fetch pokemons');
     }
+  }
 
-    async getPokemon(id) {
-        try {
-            const response = await axios.get(`${this.API_URL}${id}`)
-            const pokemon = response.data
-
-            return pokemon
-        } catch (error) {
-            console.error(error)
-            throw new Error("Failed to fetch pokemon")
-        }
+  async fetchSinglePokemon(id) {
+    try {
+      const singleResponse = await axios.get(`${this.API_URL}${id}/`);
+      const data = singleResponse.data;
+      return data;
+    } catch (err) {
+      console.log(err.message);
+      if (isNaN(id)) {
+        return id;
+      } else {
+        return `Could not fetch pokemon with id ${id}`;
+      }
     }
-
-    async getManyPokemon(ids) {
-        try {
-            const promises = ids.map(id => axios.get(`${this.API_URL}${id}`))
-            const responses = await Promise.all(promises)
-
-            const pokemons = responses.map(r => r.data)
-            return pokemons
-        } catch (error) {
-            console.error(error)
-            throw new Error("Failed to fetch pokemon")
-        }
-    }
-}
-
-module.exports = PokemonClient
+  }
+};
